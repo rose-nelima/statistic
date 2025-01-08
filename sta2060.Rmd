@@ -1,0 +1,145 @@
+---
+title: "stochastic process"
+author: "Rose Masinde"
+date: "2024-05-27"
+output: html_document
+---
+
+\#**QUESTION 1: #An independent landscape contractor works on a weekly basis. Each week he works (W), there is a #probability of 80% that will be called again to work the following week. Each week he is not working \#(N), there is a probability of only 60% that he will be called again to work. #Find #a) Define the transition probability matrix**
+
+```{r}
+transition  <- matrix(c(0.8, 0.2, 0.6, 0.4), nrow = 2, byrow = TRUE)
+transition
+```
+
+Name the rows and columns for clarity
+
+```{r}
+rownames(transition ) <- c("W", "N")
+colnames(transition) <- c("W", "N")
+transition
+
+```
+
+# 
+
+# transition probability diagram
+
+```{r}
+library(DiagrammeR)
+
+diagram <- "
+digraph {
+  W [label='W ', shape=circle]
+  N [label='N ', shape=circle]
+  
+  W -> W [label='0.8']
+  W -> N [label='0.2']
+  N -> W [label='0.6']
+  N -> N [label='0.4']
+}
+"
+
+grViz(diagram)
+
+```
+
+#The probability that if he is working now, then he will be working in 2 weeks \# the square of the transition matrix
+
+```{r}
+transition_2 <- transition %*% transition
+transition_2
+
+probability_ww <- transition_2[1, 1]
+probability_ww  
+
+
+```
+
+#The probability that if he is not working now, then he will be working in 2 weeks
+
+```{r}
+probability_nw<-transition_2[2,1]
+probability_nw
+
+```
+
+#The probability that if he is working now, then he will not be working in 2 weeks
+
+```{r}
+probability_wn<-transition_2[1,2]
+probability_wn
+```
+
+The probability that if he is not working now, then he will not be working in 2 weeks
+
+```{r}
+probability_nn<-transition_2[2,2]
+probability_nn
+```
+
+#QUESTION 2 #A market analyst is interested in whether consumers prefer Dell or Gateway computers. Two market #surveys taken one year apart reveals the following: \# − 10% of Dell owners had switched to Gateway and the rest continued with Dell. #− 35% of Gateway owners had switched to Dell and the rest continued with Gateway. #At the time of the first market survey, 40% of consumers had Dell computers and 60% had Gateway. #a) Define the transition probability matrix
+
+```{r}
+transition2  <- matrix(c(0.9, 0.1, 0.35, 0.65), nrow = 2, byrow = TRUE)
+transition2
+```
+
+Name the rows and columns for clarity
+
+```{r}
+rownames(transition2 ) <- c("D", "G")
+colnames(transition2) <- c("D", "G")
+
+transition2
+```
+
+transition diagram
+
+```{r}
+library(DiagrammeR)
+
+diagram <- "
+digraph {
+  W [label='D', shape=circle]
+  N [label='G', shape=circle]
+  
+  W -> W [label='0.9']
+  W -> N [label='0.1']
+  N -> W [label='0.35']
+  N -> N [label='0.65']
+}
+"
+
+grViz(diagram)
+
+```
+
+#What percentage will buy their next computer from Dell \# Initial state vector
+
+```{r}
+initial_state <- c(D = 0.4, G = 0.6)
+```
+
+# Compute the next state
+
+```{r}
+next_state <- initial_state %*% transition2
+next_statepercent<-(next_state[1,1]*100)
+next_statepercent
+```
+
+#What percentage will buy their second computer from Dell
+
+```{r}
+second_state <- next_state %*% transition2
+second_statepercent<-(second_state[1,1]*100)
+second_statepercent
+```
+
+#Suppose that each consumer buys a new computer each year, what will be the market #distribution after 4 year
+
+```{r}
+after4years <- initial_state %*% (transition2 %*% transition2 %*% transition2 %*% transition2)
+print(after4years)
+```

@@ -1,0 +1,332 @@
+---
+title: "STA 2060 midsem"
+author: "Rose Masinde"
+date: "2024-06-22"
+output: html_document
+---
+
+1.**Generate the directed and weighted transition probability diagram**
+
+```{r}
+#install the libraries
+library(igraph)
+library(Matrix)
+events<-c("OHP", "OHP", "OHP", "OPHP", "OPHP", "LP", "OHP", "OHP", "OPHP", "SG", "OHP", "OHP", "LP", "OHP", "OPHP", "OPHP", "LP", "OHP", "OPHP", "OPHP", "LP", "OHP", "OHP", "OPHP","OPHP", "LP", "OHP", "OHP", "OPHP", "LP", "OHP", "OPHP", "LP", "OHP", "OPHP", "OPHP", "LP", "OHP", "OPHP", "CG", "OHP", "OHP", "OPHP", "OPHP", "LP", "OHP", "OPHP", "OPHP","LP", "OHP", "OPHP", "LP", "OHP", "OPHP", "OPHP", "LP", "OHP", "OPHP","OPHP", "LP", "OHP","OPHP", "LP", "OHP", "OPHP", "LP","OHP","OPHP","SG", "OHP", "OPHP", "OPHP", "LP", "OHP", "OPHP","LP", "OHP", "OPHP", "LP", "OHP", "OPHP",  "LP", "OHP", "OPHP", "OPHP", "LP","OHP","OPHP","OPHP","LP")
+events
+
+# Unique states
+states <- unique(events)
+states
+
+# Create a transition matrix
+transitions <- matrix(0, nrow=length(states), ncol=length(states), dimnames=list(states, states))
+transitions
+
+# Count transitions
+for (i in 1:(length(events) - 1)) {
+  transitions[events[i], events[i + 1]] <- transitions[events[i], events[i + 1]] + 1
+}
+
+# Normalize to get probabilities
+transition_probs <- transitions / rowSums(transitions)
+
+# Print the transition probability matrix
+transition_probs
+
+# Create a directed graph
+ 
+graph <- graph_from_adjacency_matrix(transition_probs, mode = "directed", weighted = TRUE, diag = TRUE)
+
+# Plot the graph
+plot(graph, edge.label = round(E(graph)$weight, 1) ,main = "Transition Probability Diagram")
+
+#plot the diagram
+library(DiagrammeR)
+diagram <- "
+digraph {
+  OHP [label='OHP ', shape=circle]
+ OPHP [label='OPHP ', shape=circle]
+ LP [label='LP ', shape=circle]
+SG [label='SG ', shape=circle]
+ CG [label='CG  ', shape=circle]
+   OHP -> OHP [label='0.2']
+  OHP -> OPHP [label='0.7']
+  OHP -> LP [label='0.03']
+  OHP -> SG [label='0']
+  OHP -> CG [label='0']
+   OPHP -> OHP [label='0']
+  OPHP -> OPHP [label='0.36']
+  OPHP -> LP [label='0.56']
+  OPHP -> SG [label='0.56']
+  OPHP -> CG [label='0.28']
+   LP -> OHP [label='1.0']
+   LP -> OPHP [label='0']
+  LP -> LP [label='0']
+  LP -> SG [label='0']
+  LP -> CG [label='0']
+   SG -> OHP [label='1.0']
+  SG -> OPHP [label='0']
+  SG -> LP [label='0']
+  SG -> SG [label='0']
+  SG -> CG [label='0']
+   CG -> OHP [label='1.0']
+  CG -> OPHP [label='0']
+  CG -> LP [label='0']
+  CG -> SG [label='0']
+  CG -> CG [label='0']
+}
+"
+
+grViz(diagram)
+```
+
+**b)identify any transient and recurrent state**
+
+```{r}
+# Function to identify recurrent and transient states
+is_recurrent <- function(trans_probs, state) {
+  reach <- rep(FALSE, nrow(trans_probs))
+  reach[state] <- TRUE
+  while (TRUE) {
+    new_reach <- reach | (reach %*% trans_probs > 0)
+    if (all(reach == new_reach)) break
+    reach <- new_reach
+  }
+  reach[state]
+}
+
+recurrent_states <- sapply(1:nrow(transition_probs), function(i) is_recurrent(transition_probs, i))
+transient_states <- !recurrent_states
+
+recurrent_states
+transient_states
+print(states[recurrent_states])
+print(states[transient_states])
+ 
+```
+
+**c)construct transition probability matrix**
+
+```{r}
+# Normalize counts to probabilities
+transition_matrix <- prop.table(transitions, 1)
+
+# Display the transition matrix
+transition_matrix
+```
+
+**d)How was the transitions probability calculated**
+
+We did this first by counting the transitions from the current event to the next event using the for loop,but in order to have a finite loop, the events is reduced to the second last event using minus 1 so than the next event will not be infinite after counting we need to ensure our row sums to 1.So we divide the transitions of events by the sum of rows using the rowSums() function to get each probability and to add up the rows to 1.
+
+**e)What assumptions are made about states with zero transitions**
+
+There are no transitions from one state or event to another
+
+**2.Assume current state is OHP.Cal the prob that the team will be in the LP state after two or three exactly transitions**
+
+```{r}
+# Normalize to get probabilities
+transition_probs <- transitions / rowSums(transitions)
+
+# Calculate transition probabilities after 2 transitions
+second_state <- transition_probs %*% transition_probs
+
+second_state
+# Calculate transition probabilities after 3 transitions
+third_state <- transition_probs %*% transition_probs %*% transition_probs
+third_state
+# Probability of being in LP after exactly 2 transitions from OHP
+prob_2  <- second_state["OHP", "LP"]
+
+# Probability of being in LP after exactly 3 transitions from OHP
+prob_3  <- third_state["OHP", "LP"]
+
+# Print the results
+prob_2 
+prob_3
+```
+
+**b)compare the results and discuss the impact of the number of transitions on the state probabilities**
+
+Two times transition is larger than the three times transition which is lower.The three times transition indicates a higher probability that state LP will be reached faster from OHP.
+
+Thus the impact of many transitions will increase the likelihood of transitioning from one state to another.
+
+**3.Deter prob of transitioning from OPHP to SG within exactly five times**
+
+```{r}
+#coputing within exactly five times
+fifth_state<- transition_probs %*% transition_probs %*% transition_probs %*% transition_probs %*% transition_probs
+fifth_state
+#probability
+prob_5<- fifth_state["OPHP","SG"]
+prob_5
+```
+
+**#include all possible paths and intermediate states in your calculations**
+
+```{r}
+# Calculate transition probabilities after 1 transition
+first_state<-transition_probs
+first_state
+
+#probability
+prob_1<- first_state["OPHP","SG"]
+prob_1
+# Calculate transition probabilities after 2 transitions
+second_state <- transition_probs %*% transition_probs
+
+second_state
+
+#probability
+prob_2<- second_state["OPHP","SG"]
+prob_2
+# Calculate transition probabilities after 3 transitions
+third_state <- transition_probs %*% transition_probs %*% transition_probs
+third_state
+
+#probability
+prob_3<- third_state["OPHP","SG"]
+prob_3
+#Calculate transition probabilities after 4 transitions
+fourth_state <- transition_probs %*% transition_probs %*% transition_probs %*% transition_probs
+fourth_state
+
+#probability
+prob_4<- fourth_state["OPHP","SG"]
+prob_4
+#Calculate transition probabilities after 5 transitions
+fifth_state<- transition_probs %*% transition_probs %*% transition_probs %*% transition_probs %*% transition_probs
+fifth_state
+
+#probability
+prob_5<- fifth_state["OPHP","SG"]
+prob_5
+```
+
+**c)Compute the expected number of steps to transition from ophp to sg**
+
+```{r}
+library(expm)
+P<-matrix(c(0.2258065, 0.7419355, 0.03225806, 0, 0,
+              0, 0.3611111, 0.55555556, 0.05555556, 0.02777778,
+              1, 0, 0, 0, 0,
+              1, 0, 0, 0, 0,
+              1, 0, 0, 0, 0), 
+            nrow=5, byrow=TRUE)
+rownames(P) <- colnames(P) <- c("OHP", "OPHP", "LP", "SG", "CG")
+# Function to compute the expected number of steps from state i to state j
+expected_steps_to_reach <- function(P, start_state, end_state) {
+  states <- rownames(P)
+  n <- nrow(P)
+  end_index <- which(states == end_state)
+  
+  # Initialize the matrix A and vector b
+  A <- diag(n) - P
+  A
+  b <- rep(1, n)
+  b
+  b[end_index] <- 0
+  b
+  A[end_index, ] <- 0
+  A
+  A[end_index, end_index] <- 1
+  A
+  
+  # Solve the linear system (Ax = b) to find expected steps
+  expected_steps <- solve(A, b)
+  expected_steps
+  
+  start_index <- which(states == start_state)
+  start_index
+  return(expected_steps[start_index])
+}
+
+# Compute the expected number of steps to transition from "OPHP" to "SG"
+expected_steps_OPHP_to_SG<- expected_steps_to_reach(P, "OPHP", "SG")
+expected_steps_OPHP_to_SG
+ 
+```
+
+**4.Compute the steady state for each probabilities for each state**
+
+```{r}
+# Required libraries
+library(expm)
+
+# Define the transition probability matrix
+P <- matrix(c(0.2258065, 0.7419355, 0.03225806, 0, 0,
+              0, 0.3611111, 0.55555556, 0.05555556, 0.02777778,
+              1, 0, 0, 0, 0,
+              1, 0, 0, 0, 0,
+              1, 0, 0, 0, 0), 
+            nrow=5, byrow=TRUE)
+rownames(P) <- colnames(P) <- c("OHP", "OPHP", "LP", "SG", "CG")
+
+# Compute the steady-state probabilities
+steady_state <- function(P) {
+  n <- nrow(P)
+  A <- t(P) - diag(n)
+  A[n,] <- rep(1, n)
+  b <- c(rep(0, n-1), 1)
+  pi <- solve(A, b)
+  return(pi)
+}
+
+steady_state_probs <- steady_state(P)
+names(steady_state_probs) <- rownames(P)
+steady_state_probs
+
+```
+
+**b)the mixing time the number of steps required to get close to its steady state**
+
+```{r}
+# Function to compute the total variation distance
+total_variation_distance <- function(P, pi) {
+  return(max(rowSums(abs(P - matrix(rep(pi, nrow(P)), nrow=nrow(P), byrow=TRUE)))))
+}
+
+# Estimate the mixing time
+estimate_mixing_time <- function(P, pi, epsilon=1e-6) {
+  n <- nrow(P)
+  current_P <- P
+  steps <- 0
+  while (total_variation_distance(current_P, pi) > epsilon) {
+    current_P <- current_P %*% P
+    steps <- steps + 1
+  }
+  return(steps)
+}
+
+mixing_time <- estimate_mixing_time(P, steady_state_probs)
+ 
+mixing_time
+```
+
+**c)Interpret in the context of the teams long term performance and strategic implications**
+
+the steady state is how long the football team will spend in each state,
+
+OHP is the state at which the football team spends in the possession of the ball in their own half which is 0.3 which is low
+
+OPHP the proportion of time in which the team spends in possession of the ball in the opponents half which is 0.4 higher than their own
+
+LP the proportion of time the team spends when it loses possession of the ball which is 0.2 which is lower
+
+SG the proportion of time the team spends when having scored a goal which is minimum 0.02
+
+CG the proportion of time the team spends in conceding a goal 0.01 which is minimum
+
+the mixing time enables the team understand how quickly they adapt to different match conditions and how their performance is over time
+
+A shorter mixing time which is 38 suggests that the team's performance stabilizes quickly, indicating consistent performance over time.It helps make decisions on training strategy to enhance performance and address weaknesses.
+
+**d) Discuss how changes in transition probabilities could affect the steady state distribution and mixing over time.**
+
+If the probability of transitioning to SG increases and you assume it cannot give(absorbing state) the steady state will increase therefore the team will score many goal and the mixing time will decrease as the team will reach its steady state faster.
+
+If the probability of transitioning to LP decreases the steady state will increase indicating good ball control power therefore the mixing time will decrease.
+
+If the probability of transitioning to states is balanced the mixing time will increase because it will take a long time to reach its steady state.

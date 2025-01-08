@@ -1,0 +1,100 @@
+---
+title: "statistical modelling"
+author: "Rose Masinde"
+date: "2024-09-11"
+output: html_document
+---
+
+UPLOADING THE EXCEL FILE
+
+```{r}
+library(readxl)
+data<-read_xlsx("C:/Users/user/Downloads/Student health survey data.xlsx")
+data
+```
+
+Multiple linear regression in R
+
+```{r}
+model<-lm(incmnth~age+sex+homecost+mobilecost+transport+food+entertain+veg+food+medication+height+weight,data=data)
+summary(model)
+```
+
+Assumptions:linear relationship
+
+```{r}
+# Basic scatter plot
+#plot(x, y, main="Scatter Plot Example", xlab="X Axis", ylab="Y Axis", pch=19, col="blue")
+library(ggplot2)
+library(tidyverse)
+ggplot(data) +
+geom_point(aes(x = food, y = incmnth))
+# Plot the matrices between
+# 4 variables giving 12 plots.
+# One variable with 3 others
+# and total 4 variables.
+pairs(~age+sex+homecost+mobilecost+transport+food+entertain+veg+food+medication+height+weight, data = data,
+main = "Scatterplot Matrix")
+```
+
+income has a linear relationship with food but not with age
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+ggplot(data, aes(x = age, y = incmnth)) +
+  geom_point() +
+  labs(title = "Scatter Plot of Age vs. Income", x = "Age", y = "Income") +
+  theme_minimal()
+```
+
+Assumption 2:No multicollinearity
+
+```{r}
+library(car)
+summary(model)
+vif(model)
+```
+
+A value of 1 vif indicates there is no correlation between a given predictor variable and any other predictor variables between 1 and 5 indicates moderate correlation
+
+Assumption 3:independence
+
+```{r}
+library(car)
+#perform Durbin-Watson test
+durbinWatsonTest(model)
+```
+
+LASSO REGRESSION
+
+```{r}
+#define response variable
+y <- mtcars$hp
+
+#define matrix of predictor variables
+x <- data.matrix(mtcars[, c('mpg', 'wt', 'drat', 'qsec')])
+
+
+```
+
+```{r}
+library(glmnet)
+
+#perform k-fold cross-validation to find optimal lambda value
+cv_model <- cv.glmnet(x, y, alpha = 1)
+
+#find optimal lambda value that minimizes test MSE
+best_lambda <- cv_model$lambda.min
+best_lambda
+
+#[1] 5.616345
+
+#produce plot of test MSE by lambda value
+plot(cv_model) 
+
+```
+
+```{r}
+install.packages("remotes")
+```
